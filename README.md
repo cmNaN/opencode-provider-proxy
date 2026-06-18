@@ -10,7 +10,11 @@ Each provider (e.g. deepseek, openai) can use a different proxy URL. Requests to
 ## Install
 
 ```bash
-# From the plugin directory
+# Clone the plugin
+git clone git@github.com:cmNaN/opencode-provider-proxy.git
+cd opencode-provider-proxy
+
+# Build
 npm run build
 
 # Copy to your OpenCode plugins directory
