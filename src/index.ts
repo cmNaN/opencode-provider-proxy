@@ -232,9 +232,6 @@ const plugin = async (): Promise<Hooks> => {
         const proxyUrl = cfg[providerId] ?? wildcardUrl;
         if (!proxyUrl) continue;
 
-        console.log(
-          `[opencode-provider-proxy] Injecting proxy for "${providerId}" → ${proxyUrl}`
-        );
         p.options = { ...p.options, fetch: createProxiedFetch(proxyUrl) };
       }
     },
