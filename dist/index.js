@@ -489,15 +489,6 @@ y.preconnect = function(J) {
 // src/index.ts
 var fs = __toESM(require("fs"), 1);
 var path = __toESM(require("path"), 1);
-var LOG_FILE = "/tmp/opencode-provider-proxy.log";
-function log(...args) {
-  const line = `[${(/* @__PURE__ */ new Date()).toISOString()}] ${args.map(String).join(" ")}
-`;
-  try {
-    fs.appendFileSync(LOG_FILE, line);
-  } catch {
-  }
-}
 var CONFIG_PATH = path.join(
   process.env.XDG_CONFIG_HOME || path.join(process.env.HOME || "/root", ".config"),
   "opencode",
@@ -540,20 +531,13 @@ function createProxiedFetch(proxyUrl) {
   return async function proxiedFetch(input, init) {
     const id = ++_reqId;
     const urlStr = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-    const parsed = new URL(urlStr);
-    const t0 = Date.now();
-    log(`[#${id}] \u2192 ${init?.method || "GET"} ${parsed.hostname}${parsed.pathname} via ${proxyUrl}`);
     try {
       const response = await y(input, {
         ...init,
         proxy: proxyUrl
       });
-      const ms = Date.now() - t0;
-      log(`[#${id}] \u2713 ${response.status} in ${ms}ms`);
       return response;
     } catch (err) {
-      const ms = Date.now() - t0;
-      log(`[#${id}] \u2717 FAIL after ${ms}ms: ${err.message}`);
       throw err;
     }
   };
@@ -571,23 +555,11 @@ var plugin = async () => {
   );
   return {
     config: async (input) => {
-      const providerIds = Object.keys(input.provider ?? {});
-      log(`=== config hook fired (providers: ${JSON.stringify(providerIds)}) ===`);
       for (const [providerId, p] of Object.entries(input.provider ?? {})) {
         const proxyUrl = cfg[providerId] ?? wildcardUrl;
-        if (!proxyUrl) {
-          log(`  provider "${providerId}": no proxy configured \u2192 SKIP`);
-          continue;
-        }
+        if (!proxyUrl) continue;
         const opts = p.options ?? {};
-        const hasExistingFetch = typeof opts.fetch === "function";
-        log(`  provider "${providerId}": proxy=${proxyUrl}, hasExistingFetch=${hasExistingFetch}, optionsKeys=${Object.keys(opts)}`);
-        if (hasExistingFetch) {
-          log(`  \u26A0  provider "${providerId}" already has a custom fetch \u2014 will OVERRIDE it`);
-        }
         p.options = { ...opts, fetch: createProxiedFetch(proxyUrl) };
-        const after = typeof p.options?.fetch === "function";
-        log(`  provider "${providerId}": fetch injected=${after}`);
       }
     }
   };

@@ -3,12 +3,6 @@ import { fetch as socksFetch } from "netbun";
 import * as fs from "fs";
 import * as path from "path";
 
-const LOG_FILE = "/tmp/opencode-provider-proxy.log";
-function log(...args: unknown[]) {
-  const line = `[${new Date().toISOString()}] ${args.map(String).join(" ")}\n`;
-  try { fs.appendFileSync(LOG_FILE, line); } catch { /* ignore */ }
-}
-
 const CONFIG_PATH = path.join(
   process.env.XDG_CONFIG_HOME ||
     path.join(process.env.HOME || "/root", ".config"),
@@ -67,22 +61,13 @@ function createProxiedFetch(proxyUrl: string) {
         : input instanceof URL
           ? input.href
           : input.url;
-    const parsed = new URL(urlStr);
-    const t0 = Date.now();
-
-    log(`[#${id}] → ${init?.method || "GET"} ${parsed.hostname}${parsed.pathname} via ${proxyUrl}`);
-
     try {
       const response = await (socksFetch as any)(input, {
         ...init,
         proxy: proxyUrl,
       });
-      const ms = Date.now() - t0;
-      log(`[#${id}] ✓ ${response.status} in ${ms}ms`);
       return response;
     } catch (err) {
-      const ms = Date.now() - t0;
-      log(`[#${id}] ✗ FAIL after ${ms}ms: ${(err as Error).message}`);
       throw err;
     }
   };
@@ -105,27 +90,12 @@ const plugin = async (): Promise<Hooks> => {
 
   return {
     config: async (input: Config) => {
-      const providerIds = Object.keys(input.provider ?? {});
-      log(`=== config hook fired (providers: ${JSON.stringify(providerIds)}) ===`);
-
       for (const [providerId, p] of Object.entries(input.provider ?? {})) {
         const proxyUrl = cfg[providerId] ?? wildcardUrl;
-        if (!proxyUrl) {
-          log(`  provider "${providerId}": no proxy configured → SKIP`);
-          continue;
-        }
+        if (!proxyUrl) continue;
 
         const opts = (p as any).options ?? {};
-        const hasExistingFetch = typeof opts.fetch === "function";
-        log(`  provider "${providerId}": proxy=${proxyUrl}, hasExistingFetch=${hasExistingFetch}, optionsKeys=${Object.keys(opts)}`);
-
-        if (hasExistingFetch) {
-          log(`  ⚠  provider "${providerId}" already has a custom fetch — will OVERRIDE it`);
-        }
-
         (p as any).options = { ...opts, fetch: createProxiedFetch(proxyUrl) };
-        const after = typeof (p as any).options?.fetch === "function";
-        log(`  provider "${providerId}": fetch injected=${after}`);
       }
     },
   };
