@@ -1,0 +1,26 @@
+{
+  "name": "opencode-provider-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Per-provider proxy configuration plugin for OpenCode",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --outfile=dist/index.js --external:@opencode-ai/plugin",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "netbun": "^0.3.0"
+  },
+  "devDependencies": {
+    "@opencode-ai/plugin": "^1.14.25",
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.28.1",
+    "typescript": "^5.7.0"
+  }
+}

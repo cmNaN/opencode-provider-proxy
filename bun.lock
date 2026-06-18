@@ -1,0 +1,111 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 0,
+  "workspaces": {
+    "": {
+      "name": "opencode-provider-proxy",
+      "dependencies": {
+        "http-proxy-agent": "^9.1.0",
+        "https-proxy-agent": "^9.1.0",
+        "netbun": "^0.4.1",
+        "socks-proxy-agent": "^9.0.0",
+      },
+      "devDependencies": {
+        "@opencode-ai/plugin": "^1.14.25",
+        "@types/node": "^22.0.0",
+        "typescript": "^5.7.0",
+      },
+    },
+  },
+  "packages": {
+    "@msgpackr-extract/msgpackr-extract-darwin-arm64": ["@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4", "https://registry.npmmirror.com/@msgpackr-extract/msgpackr-extract-darwin-arm64/-/msgpackr-extract-darwin-arm64-3.0.4.tgz", { "os": "darwin", "cpu": "arm64" }, "sha512-LCkGo6JDfaBhgST7UpPWgNgLINpcpabaHfyz5OBx75nUYxBsaEPxjnyNjWpeb/xBup/682QnBfRBy2/LvPutZQ=="],
+
+    "@msgpackr-extract/msgpackr-extract-darwin-x64": ["@msgpackr-extract/msgpackr-extract-darwin-x64@3.0.4", "https://registry.npmmirror.com/@msgpackr-extract/msgpackr-extract-darwin-x64/-/msgpackr-extract-darwin-x64-3.0.4.tgz", { "os": "darwin", "cpu": "x64" }, "sha512-zExlW9zUJKZH/tOtVMttwjKa4Xm/3KcNjnE3dPN92uCktwavMxpgCA3MoJK/DOnTWsQgo224OaST27/mPNAf+w=="],
+
+    "@msgpackr-extract/msgpackr-extract-linux-arm": ["@msgpackr-extract/msgpackr-extract-linux-arm@3.0.4", "https://registry.npmmirror.com/@msgpackr-extract/msgpackr-extract-linux-arm/-/msgpackr-extract-linux-arm-3.0.4.tgz", { "os": "linux", "cpu": "arm" }, "sha512-Tg3yX65f5GbtXLkrYEHE5oibZG9epyYWas7FogTTEJeDEF9JlXJzKgXaNhT3UXlTOeA+AfZpYZYZ0uPj7Cfquw=="],
+
+    "@msgpackr-extract/msgpackr-extract-linux-arm64": ["@msgpackr-extract/msgpackr-extract-linux-arm64@3.0.4", "https://registry.npmmirror.com/@msgpackr-extract/msgpackr-extract-linux-arm64/-/msgpackr-extract-linux-arm64-3.0.4.tgz", { "os": "linux", "cpu": "arm64" }, "sha512-dgX0P/9wGPJeHFBG+ZmhgE6bmtMt7NP5CRBGyyktpopdk/mW4POnrpQsSLtKI1dwpc+pPLuXHDh6vvskyQE/sw=="],
+
+    "@msgpackr-extract/msgpackr-extract-linux-x64": ["@msgpackr-extract/msgpackr-extract-linux-x64@3.0.4", "https://registry.npmmirror.com@msgpackr-extract/msgpackr-extract-linux-x64/-/msgpackr-extract-linux-x64-3.0.4.tgz", { "os": "linux", "cpu": "x64" }, ""],
+
+    "@msgpackr-extract/msgpackr-extract-win32-x64": ["@msgpackr-extract/msgpackr-extract-win32-x64@3.0.4", "https://registry.npmmirror.com/@msgpackr-extract/msgpackr-extract-win32-x64/-/msgpackr-extract-win32-x64-3.0.4.tgz", { "os": "win32", "cpu": "x64" }, "sha512-CmCXPQrkbwExx3j946/PtHWHbYJiCRBRDl4BlkRQcJB/YOwQxJRTpoo7aTsortjgoJ1x7opzTSxn7C+ASSLVjQ=="],
+
+    "@opencode-ai/plugin": ["@opencode-ai/plugin@1.17.8", "https://registry.npmmirror.com@opencode-ai/plugin/-/plugin-1.17.8.tgz", { "dependencies": { "@opencode-ai/sdk": "1.17.8", "effect": "4.0.0-beta.74", "zod": "4.1.8" }, "peerDependencies": { "@opentui/core": ">=0.3.4", "@opentui/keymap": ">=0.3.4", "@opentui/solid": ">=0.3.4" }, "optionalPeers": ["@opentui/core", "@opentui/keymap", "@opentui/solid"] }, ""],
+
+    "@opencode-ai/sdk": ["@opencode-ai/sdk@1.17.8", "https://registry.npmmirror.com@opencode-ai/sdk/-/sdk-1.17.8.tgz", { "dependencies": { "cross-spawn": "7.0.6" } }, ""],
+
+    "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "https://registry.npmmirror.com@standard-schema/spec/-/spec-1.1.0.tgz", {}, ""],
+
+    "@types/node": ["@types/node@22.19.21", "https://registry.npmmirror.com/@types/node/-/node-22.19.21.tgz", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-VMeFBSCKQKmm2swI2kW51SFusDqekC6q9trBCvJ/JliDchFSuoYYKN7yVNjPthP1HKZcx3U1gI/wTcEBjEFKTA=="],
+
+    "agent-base": ["agent-base@9.0.0", "https://registry.npmmirror.comagent-base/-/agent-base-9.0.0.tgz", {}, ""],
+
+    "cross-spawn": ["cross-spawn@7.0.6", "https://registry.npmmirror.comcross-spawn/-/cross-spawn-7.0.6.tgz", { "dependencies": { "path-key": "^3.1.0", "shebang-command": "^2.0.0", "which": "^2.0.1" } }, ""],
+
+    "debug": ["debug@4.4.3", "https://registry.npmmirror.comdebug/-/debug-4.4.3.tgz", { "dependencies": { "ms": "^2.1.3" } }, ""],
+
+    "detect-libc": ["detect-libc@2.1.2", "https://registry.npmmirror.comdetect-libc/-/detect-libc-2.1.2.tgz", {}, ""],
+
+    "effect": ["effect@4.0.0-beta.74", "https://registry.npmmirror.comeffect/-/effect-4.0.0-beta.74.tgz", { "dependencies": { "@standard-schema/spec": "^1.1.0", "fast-check": "^4.8.0", "find-my-way-ts": "^0.1.6", "ini": "^7.0.0", "kubernetes-types": "^1.30.0", "msgpackr": "^2.0.1", "multipasta": "^0.2.7", "toml": "^4.1.1", "uuid": "^14.0.0", "yaml": "^2.9.0" } }, ""],
+
+    "fast-check": ["fast-check@4.8.0", "https://registry.npmmirror.comfast-check/-/fast-check-4.8.0.tgz", { "dependencies": { "pure-rand": "^8.0.0" } }, ""],
+
+    "find-my-way-ts": ["find-my-way-ts@0.1.6", "https://registry.npmmirror.comfind-my-way-ts/-/find-my-way-ts-0.1.6.tgz", {}, ""],
+
+    "http-proxy-agent": ["http-proxy-agent@9.1.0", "https://registry.npmmirror.com/http-proxy-agent/-/http-proxy-agent-9.1.0.tgz", { "dependencies": { "agent-base": "9.0.0", "debug": "^4.3.4", "proxy-agent-negotiate": "1.1.0" } }, "sha512-2NxoveTT58mjYT4n3RPTEfCZGLMbidoO8XEieXfpSYxu+PQJ1qpx4ypwH6N+uF9twBPIvRRgvkvW5HUTYWENig=="],
+
+    "https-proxy-agent": ["https-proxy-agent@9.1.0", "https://registry.npmmirror.comhttps-proxy-agent/-/https-proxy-agent-9.1.0.tgz", { "dependencies": { "agent-base": "9.0.0", "debug": "^4.3.4", "proxy-agent-negotiate": "1.1.0" } }, ""],
+
+    "ini": ["ini@7.0.0", "https://registry.npmmirror.comini/-/ini-7.0.0.tgz", {}, ""],
+
+    "ip-address": ["ip-address@10.2.0", "https://registry.npmmirror.com/ip-address/-/ip-address-10.2.0.tgz", {}, "sha512-/+S6j4E9AHvW9SWMSEY9Xfy66O5PWvVEJ08O0y5JGyEKQpojb0K0GKpz/v5HJ/G0vi3D2sjGK78119oXZeE0qA=="],
+
+    "isexe": ["isexe@2.0.0", "https://registry.npmmirror.comisexe/-/isexe-2.0.0.tgz", {}, ""],
+
+    "kubernetes-types": ["kubernetes-types@1.30.0", "https://registry.npmmirror.comkubernetes-types/-/kubernetes-types-1.30.0.tgz", {}, ""],
+
+    "ms": ["ms@2.1.3", "https://registry.npmmirror.comms/-/ms-2.1.3.tgz", {}, ""],
+
+    "msgpackr": ["msgpackr@2.0.4", "https://registry.npmmirror.commsgpackr/-/msgpackr-2.0.4.tgz", { "optionalDependencies": { "msgpackr-extract": "^3.0.4" } }, ""],
+
+    "msgpackr-extract": ["msgpackr-extract@3.0.4", "https://registry.npmmirror.commsgpackr-extract/-/msgpackr-extract-3.0.4.tgz", { "dependencies": { "node-gyp-build-optional-packages": "5.2.2" }, "optionalDependencies": { "@msgpackr-extract/msgpackr-extract-darwin-arm64": "3.0.4", "@msgpackr-extract/msgpackr-extract-darwin-x64": "3.0.4", "@msgpackr-extract/msgpackr-extract-linux-arm": "3.0.4", "@msgpackr-extract/msgpackr-extract-linux-arm64": "3.0.4", "@msgpackr-extract/msgpackr-extract-linux-x64": "3.0.4", "@msgpackr-extract/msgpackr-extract-win32-x64": "3.0.4" }, "bin": { "download-msgpackr-prebuilds": "bin/download-prebuilds.js" } }, ""],
+
+    "multipasta": ["multipasta@0.2.7", "https://registry.npmmirror.commultipasta/-/multipasta-0.2.7.tgz", {}, ""],
+
+    "netbun": ["netbun@0.4.1", "https://registry.npmmirror.com/netbun/-/netbun-0.4.1.tgz", {}, "sha512-+m3RfwdtKHnYEZR9tSBKSvVi2pjnMfbEbW7q03Ey2fXX7wuMyW0ZLE+0C0D3svVh1tqNd3Bas73vyH5BdkgieA=="],
+
+    "node-gyp-build-optional-packages": ["node-gyp-build-optional-packages@5.2.2", "https://registry.npmmirror.comnode-gyp-build-optional-packages/-/node-gyp-build-optional-packages-5.2.2.tgz", { "dependencies": { "detect-libc": "^2.0.1" }, "bin": { "node-gyp-build-optional-packages": "bin.js", "node-gyp-build-optional-packages-optional": "optional.js", "node-gyp-build-optional-packages-test": "build-test.js" } }, ""],
+
+    "path-key": ["path-key@3.1.1", "https://registry.npmmirror.compath-key/-/path-key-3.1.1.tgz", {}, ""],
+
+    "proxy-agent-negotiate": ["proxy-agent-negotiate@1.1.0", "https://registry.npmmirror.comproxy-agent-negotiate/-/proxy-agent-negotiate-1.1.0.tgz", { "peerDependencies": { "kerberos": "^2.0.0" }, "optionalPeers": ["kerberos"] }, ""],
+
+    "pure-rand": ["pure-rand@8.4.0", "https://registry.npmmirror.compure-rand/-/pure-rand-8.4.0.tgz", {}, ""],
+
+    "shebang-command": ["shebang-command@2.0.0", "https://registry.npmmirror.comshebang-command/-/shebang-command-2.0.0.tgz", { "dependencies": { "shebang-regex": "^3.0.0" } }, ""],
+
+    "shebang-regex": ["shebang-regex@3.0.0", "https://registry.npmmirror.comshebang-regex/-/shebang-regex-3.0.0.tgz", {}, ""],
+
+    "smart-buffer": ["smart-buffer@4.2.0", "https://registry.npmmirror.com/smart-buffer/-/smart-buffer-4.2.0.tgz", {}, "sha512-94hK0Hh8rPqQl2xXc3HsaBoOXKV20MToPkcXvwbISWLEs+64sBq5kFgn2kJDHb1Pry9yrP0dxrCI9RRci7RXKg=="],
+
+    "socks": ["socks@2.8.9", "https://registry.npmmirror.com/socks/-/socks-2.8.9.tgz", { "dependencies": { "ip-address": "^10.1.1", "smart-buffer": "^4.2.0" } }, "sha512-LJhUYUvItdQ0LkJTmPeaEObWXAqFyfmP85x0tch/ez9cahmhlBBLbIqDFnvBnUJGagb0JbIQrkBs1wJ+yRYpEw=="],
+
+    "socks-proxy-agent": ["socks-proxy-agent@9.0.0", "https://registry.npmmirror.com/socks-proxy-agent/-/socks-proxy-agent-9.0.0.tgz", { "dependencies": { "agent-base": "8.0.0", "debug": "^4.3.4", "socks": "^2.8.3" } }, "sha512-fFlbMlfsXhK02ZB8aZY7Hwxh/IHBV9b1Oq9bvBk6tkFWXvdAxUgA0wbw/NYR5liU3Y5+KI6U4FH3kYJt9QYv0w=="],
+
+    "toml": ["toml@4.1.1", "https://registry.npmmirror.comtoml/-/toml-4.1.1.tgz", {}, ""],
+
+    "typescript": ["typescript@5.9.3", "https://registry.npmmirror.comtypescript/-/typescript-5.9.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, ""],
+
+    "undici-types": ["undici-types@6.21.0", "https://registry.npmmirror.com/undici-types/-/undici-types-6.21.0.tgz", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
+
+    "uuid": ["uuid@14.0.0", "https://registry.npmmirror.comuuid/-/uuid-14.0.0.tgz", { "bin": "dist-node/bin/uuid" }, ""],
+
+    "which": ["which@2.0.2", "https://registry.npmmirror.comwhich/-/which-2.0.2.tgz", { "dependencies": { "isexe": "^2.0.0" }, "bin": { "node-which": "bin/node-which" } }, ""],
+
+    "yaml": ["yaml@2.9.0", "https://registry.npmmirror.comyaml/-/yaml-2.9.0.tgz", { "bin": "bin.mjs" }, ""],
+
+    "zod": ["zod@4.1.8", "https://registry.npmmirror.comzod/-/zod-4.1.8.tgz", {}, ""],
+
+    "socks-proxy-agent/agent-base": ["agent-base@8.0.0", "https://registry.npmmirror.com/agent-base/-/agent-base-8.0.0.tgz", {}, "sha512-QT8i0hCz6C/KQ+KTAbSNwCHDGdmUJl2tp2ZpNlGSWCfhUNVbYG2WLE3MdZGBAgXPV4GAvjGMxo+C1hroyxmZEg=="],
+  }
+}
