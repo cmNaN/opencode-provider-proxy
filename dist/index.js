@@ -1,44 +1,8 @@
-"use strict";
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-
-// src/index.ts
-var index_exports = {};
-__export(index_exports, {
-  default: () => index_default
-});
-module.exports = __toCommonJS(index_exports);
-
 // node_modules/netbun/dist/index.js
-var e = __toESM(require("dns"), 1);
-var JJ = __toESM(require("net"), 1);
-var QJ = __toESM(require("tls"), 1);
-var g = __toESM(require("zlib"), 1);
+import * as e from "dns";
+import * as JJ from "net";
+import * as QJ from "tls";
+import * as g from "zlib";
 var U = /[^A-Za-z0-9._~-]/;
 var FJ = /^\d+$/;
 function l(Q, J = false) {
@@ -487,8 +451,8 @@ y.preconnect = function(J) {
 };
 
 // src/index.ts
-var fs = __toESM(require("fs"), 1);
-var path = __toESM(require("path"), 1);
+import * as fs from "fs";
+import * as path from "path";
 var CONFIG_PATH = path.join(
   process.env.XDG_CONFIG_HOME || path.join(process.env.HOME || "/root", ".config"),
   "opencode",
@@ -565,3 +529,6 @@ var plugin = async () => {
   };
 };
 var index_default = plugin;
+export {
+  index_default as default
+};

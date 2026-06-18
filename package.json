@@ -10,7 +10,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --platform=node --outfile=dist/index.js --external:@opencode-ai/plugin",
+    "build": "esbuild src/index.ts --bundle --format=esm --platform=node --outfile=dist/index.js --external:@opencode-ai/plugin",
     "prepare": "npm run build",
     "postinstall": "node scripts/postinstall.mjs",
     "prepublishOnly": "npm run build"
