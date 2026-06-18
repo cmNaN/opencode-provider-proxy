@@ -12,6 +12,7 @@
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build",
+    "postinstall": "node scripts/postinstall.mjs",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
