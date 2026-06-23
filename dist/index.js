@@ -451,6 +451,7 @@ y.preconnect = function(J) {
 };
 
 // src/index.ts
+import { AsyncLocalStorage } from "node:async_hooks";
 import * as fs from "fs";
 import * as path from "path";
 var CONFIG_PATH = path.join(
@@ -458,31 +459,55 @@ var CONFIG_PATH = path.join(
   "opencode",
   "provider-proxy.json"
 );
-function readProxyConfig() {
-  const envRaw = process.env.OPENCODE_PROVIDER_PROXY;
-  if (envRaw) {
-    try {
-      const cfg = JSON.parse(envRaw);
-      for (const [key, value] of Object.entries(cfg)) {
-        if (typeof value !== "string") {
-          console.warn(`[opencode-provider-proxy] Invalid config: "${key}" must be a string, got ${typeof value}`);
-          delete cfg[key];
-        }
-      }
-      return cfg;
-    } catch {
-      console.error("[opencode-provider-proxy] OPENCODE_PROVIDER_PROXY is not valid JSON");
-    }
-  }
+var DEBUG_LOG_PATH = (() => {
+  const dir = process.env.OPENCODE_PROVIDER_PROXY_LOG_DIR?.trim();
+  if (!dir) return void 0;
   try {
-    const cfg = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
+    fs.mkdirSync(dir, { recursive: true });
+  } catch {
+  }
+  return path.join(dir, "opencode-provider-proxy-debug.log");
+})();
+function debugLog(line) {
+  if (!DEBUG_LOG_PATH) return;
+  try {
+    fs.appendFileSync(
+      DEBUG_LOG_PATH,
+      `[${(/* @__PURE__ */ new Date()).toISOString()}] ${line}
+`
+    );
+  } catch {
+  }
+}
+function maskAuth(value) {
+  if (!value) return "<none>";
+  if (value.length <= 24) return `present len=${value.length} (short,masked)`;
+  return `present len=${value.length} prefix="${value.slice(0, 16)}\u2026${value.slice(-4)}"`;
+}
+function readProxyConfig() {
+  const validate = (cfg) => {
     for (const [key, value] of Object.entries(cfg)) {
       if (typeof value !== "string") {
-        console.warn(`[opencode-provider-proxy] Invalid config: "${key}" must be a string, got ${typeof value}`);
+        console.warn(
+          `[opencode-provider-proxy] Invalid config: "${key}" must be a proxy URL string, got ${typeof value}`
+        );
         delete cfg[key];
       }
     }
     return cfg;
+  };
+  const envRaw = process.env.OPENCODE_PROVIDER_PROXY;
+  if (envRaw) {
+    try {
+      return validate(JSON.parse(envRaw));
+    } catch {
+      console.error(
+        "[opencode-provider-proxy] OPENCODE_PROVIDER_PROXY is not valid JSON"
+      );
+    }
+  }
+  try {
+    return validate(JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8")));
   } catch (e2) {
     if (e2.code !== "ENOENT") {
       console.error("[opencode-provider-proxy] Failed to read", CONFIG_PATH, e2);
@@ -490,43 +515,98 @@ function readProxyConfig() {
   }
   return {};
 }
-var _reqId = 0;
-function createProxiedFetch(proxyUrl) {
-  return async function proxiedFetch(input, init) {
-    const id = ++_reqId;
-    const urlStr = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-    try {
-      const response = await y(input, {
-        ...init,
-        proxy: proxyUrl
-      });
-      return response;
-    } catch (err) {
-      throw err;
-    }
+var _reqSeq = 0;
+var proxyContext = new AsyncLocalStorage();
+var proxyByHost = /* @__PURE__ */ new Map();
+var originalFetch;
+var installedFetch;
+function normalizeHost(host) {
+  return host.toLowerCase();
+}
+function urlOf(input) {
+  if (typeof input === "string") return input;
+  if (input instanceof URL) return input.href;
+  if (input instanceof Request) return input.url;
+  return void 0;
+}
+function lookupProxyForInput(input) {
+  const raw = urlOf(input);
+  if (!raw) return void 0;
+  try {
+    const url = new URL(raw);
+    return proxyByHost.get(normalizeHost(url.host)) ?? proxyByHost.get(normalizeHost(url.hostname));
+  } catch {
+    return void 0;
+  }
+}
+async function sendThroughProxy(proxyUrl, input, init) {
+  const seq = ++_reqSeq;
+  const headers = new Headers(init?.headers);
+  if (input instanceof Request) {
+    input.headers.forEach((value, key) => {
+      if (!headers.has(key)) headers.set(key, value);
+    });
+  }
+  debugLog(
+    `req#${seq} proxy=${proxyUrl} url=${urlOf(input) ?? String(input)} authorization=${maskAuth(headers.get("authorization"))}`
+  );
+  const proxiedInit = {
+    ...init,
+    headers,
+    proxy: proxyUrl
   };
+  try {
+    const response = await proxyContext.run(
+      true,
+      () => y(input, proxiedInit)
+    );
+    debugLog(`req#${seq} \u2192 status=${response.status} ok=${response.ok}`);
+    if (!response.ok) {
+      try {
+        const bodyText = await response.clone().text();
+        debugLog(`req#${seq} \u2192 body(<=800)=${bodyText.slice(0, 800)}`);
+      } catch (be) {
+        debugLog(`req#${seq} \u2192 body-read-error: ${be?.message}`);
+      }
+    }
+    return response;
+  } catch (e2) {
+    debugLog(`req#${seq} \u2192 THREW: ${e2?.message}`);
+    throw e2;
+  }
+}
+function installGlobalFetchInterceptor() {
+  if (installedFetch) return;
+  originalFetch = globalThis.fetch.bind(globalThis);
+  installedFetch = (async (input, init) => {
+    if (proxyContext.getStore()) return originalFetch(input, init);
+    const proxyUrl = lookupProxyForInput(input);
+    if (!proxyUrl) return originalFetch(input, init);
+    return sendThroughProxy(proxyUrl, input, init);
+  });
+  globalThis.fetch = installedFetch;
+  debugLog("global fetch interceptor installed");
 }
 var plugin = async () => {
   const cfg = readProxyConfig();
-  const providers = Object.keys(cfg);
-  if (providers.length === 0) {
+  const hosts = Object.keys(cfg);
+  if (hosts.length === 0) {
     return {};
   }
-  const wildcardUrl = cfg["*"];
+  proxyByHost.clear();
+  for (const [host, proxyUrl] of Object.entries(cfg)) {
+    proxyByHost.set(normalizeHost(host), proxyUrl);
+  }
+  installGlobalFetchInterceptor();
   console.log(
-    "[opencode-provider-proxy] Active mappings:",
-    providers.map((id) => `${id} \u2192 ${cfg[id]}`).join(", ")
+    "[opencode-provider-proxy] Active host mappings:",
+    hosts.map((h) => `${h} \u2192 ${cfg[h]}`).join(", ")
   );
-  return {
-    config: async (input) => {
-      for (const [providerId, p] of Object.entries(input.provider ?? {})) {
-        const proxyUrl = cfg[providerId] ?? wildcardUrl;
-        if (!proxyUrl) continue;
-        const opts = p.options ?? {};
-        p.options = { ...opts, fetch: createProxiedFetch(proxyUrl) };
-      }
-    }
-  };
+  console.log(
+    "[opencode-provider-proxy] DEBUG log \u2192",
+    DEBUG_LOG_PATH ?? "disabled (set OPENCODE_PROVIDER_PROXY_LOG_DIR to enable)"
+  );
+  return {};
 };
 var index_default = plugin;
 export {

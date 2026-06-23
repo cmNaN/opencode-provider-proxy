@@ -1,120 +1,125 @@
 # opencode-provider-proxy
 
-[OpenCode](https://github.com/opencode-ai/opencode) 的按 Provider 级别配置代理的插件。
+[English](./README.md)
 
-每个 provider（如 deepseek、openai）可使用不同的代理地址。对该 provider 的请求通过 `https-proxy-agent`/`http-proxy-agent` 转发到对应的代理。
+一个 [OpenCode](https://opencode.ai) 插件，按**域名（host）**把 AI provider 的 API 请求路由到代理。适用于部分 provider 端点（如 `api.githubcopilot.com`）只能通过公司 / 区域代理访问，而其余流量需要直连的场景。
+
+它对**静态 apiKey** 类 provider（deepseek、openai…）和 **GitHub Copilot** 这类**动态 token** provider（其 OAuth `Bearer` token 由 OpenCode 在请求时注入）都生效——原理见[工作原理](#工作原理)。
 
 ## 安装
 
-```bash
-# 在插件目录下构建
-npm run build
+在 `~/.config/opencode/opencode.json` 中加入插件：
 
-# 链接或复制到 OpenCode 插件目录
-# ~/.config/opencode/plugins/
-```
-
-在 OpenCode 配置中添加该插件：
-
-```jsonc
-// ~/.config/opencode/opencode.json
+```json
 {
-  "plugins": [
-    {
-      "name": "opencode-provider-proxy",
-      "path": "/path/to/opencode-provider-proxy"
-    }
-  ]
+  "plugin": ["git+https://github.com/cmNaN/opencode-provider-proxy.git"]
 }
 ```
+
+OpenCode 会在下次启动时直接从 GitHub 拉取——通过 HTTPS 克隆仓库（无需 SSH key），直接使用仓库中已提交的 `dist/index.js`，安装时无需构建步骤，也无需发布到 npm。`plugin` 是字符串数组，已有其他插件时追加即可。
+
+如需锁定版本，可在同一 HTTPS 地址末尾追加 git ref：`git+https://github.com/cmNaN/opencode-provider-proxy.git#v1.0.0`（tag）或 `git+https://github.com/cmNaN/opencode-provider-proxy.git#semver:^1.0.0`。
+
+随后创建代理配置（见[配置](#配置)），重启 OpenCode。
+
+### 本地开发
+
+```bash
+git clone https://github.com/cmNaN/opencode-provider-proxy.git
+cd opencode-provider-proxy
+npm install
+npm run build
+```
+
+把产物放入（或软链到）会被自动扫描的全局插件目录：
+
+```bash
+cp dist/index.js ~/.config/opencode/plugins/opencode-provider-proxy.js
+# 或软链，便于跟随重新构建：
+ln -s "$PWD/dist/index.js" ~/.config/opencode/plugins/opencode-provider-proxy.js
+```
+
+OpenCode 会自动加载 `~/.config/opencode/plugins/` 下的任意 `*.js` / `*.ts` 文件，因此本地文件**无需**写入 `plugin` 数组。
 
 ## 配置
 
-### 配置文件
+插件按以下优先级读取 host → 代理 的映射：
 
-`~/.config/opencode/provider-proxy.json`（或 `$XDG_CONFIG_HOME/opencode/provider-proxy.json`）：
+1. 环境变量 `OPENCODE_PROVIDER_PROXY`（JSON 字符串），或
+2. `~/.config/opencode/provider-proxy.json`（遵循 XDG：会读取 `$XDG_CONFIG_HOME`）。
+
+schema 是扁平的 `{ "域名": "代理URL" }` 对象，**key 为域名**，value 为代理 URL：
 
 ```json
 {
-  "deepseek": "http://127.0.0.1:7890",
-  "openai": "http://127.0.0.1:7891"
+  "api.githubcopilot.com": "http://user:pass@proxy.example.com:18080",
+  "api.deepseek.com": "socks5://127.0.0.1:1080"
 }
 ```
 
-### 环境变量
+当请求的 **host** 命中某个配置 key（精确匹配）时走代理；其余请求一律直连、不做任何改动。配置仅在启动时读取一次，**修改后需重启 OpenCode**。
 
-`OPENCODE_PROVIDER_PROXY` — JSON 对象，结构与配置文件相同：
+等价的环境变量写法：
 
 ```bash
-export OPENCODE_PROVIDER_PROXY='{"deepseek":"http://127.0.0.1:7890"}'
+export OPENCODE_PROVIDER_PROXY='{"api.githubcopilot.com":"http://user:pass@proxy.example.com:18080"}'
 ```
-
-环境变量优先级高于配置文件。
 
 ### 认证
 
-如果代理需要用户名密码认证，直接在代理地址中嵌入凭据：
+直接把代理凭证写进代理 URL：
 
-```json
-{
-  "deepseek": "http://username:password@127.0.0.1:7890"
-}
+```
+http://username:password@proxy.example.com:18080
+socks5://username:password@127.0.0.1:1080
 ```
 
-插件会自动解析 `username:password`，发送 `Proxy-Authorization: Basic` 头。密码中的特殊字符需要 URL 编码（例如 `@` → `%40`，`:` → `%3A`）。
+用户名 / 密码中的特殊字符需做 URL 编码（如 `@` → `%40`，`:` → `%3A`）。
 
 ### 支持的代理类型
 
-代理地址必须是 **HTTP CONNECT 代理**（标准隧道代理协议）：
+| 协议 | 说明 |
+| --- | --- |
+| `http` / `https` | HTTP `CONNECT` 隧道代理 |
+| `socks5` / `socks5h` | SOCKS5（`socks5h` 由代理端解析 DNS） |
+| `socks4` / `socks4a` | SOCKS4 / SOCKS4a |
+| `socks` | SOCKS5 别名 |
 
-| 代理地址 | 说明 |
-|----------|------|
-| `http://proxy:port` | 明文 HTTP CONNECT 代理 |
-| `https://proxy:port` | 基于 TLS 的 HTTP CONNECT 代理 |
-| `socks5://proxy:port` | SOCKS5 代理（本地解析 DNS） |
-| `socks5h://proxy:port` | SOCKS5 代理（代理端解析 DNS） |
-| `socks4://proxy:port` | SOCKS4 代理 |
-| `socks4a://proxy:port` | SOCKS4a 代理（代理端解析 DNS） |
-| `socks://proxy:port` | 等同 `socks5://` |
+### 可选的调试日志
 
-常见的代理软件：
-- [Clash](https://github.com/Dreamacro/clash) / [Clash Meta](https://github.com/MetaCubeX/Clash.Meta) — HTTP / SOCKS5 端口
-- [v2ray](https://www.v2fly.org/) / [Xray](https://xtls.github.io/) — HTTP / SOCKS outbound
-- [Squid](http://www.squid-cache.org/)
-- [mitmproxy](https://mitmproxy.org/)
+日志**默认关闭**。把 `OPENCODE_PROVIDER_PROXY_LOG_DIR` 设为某个目录即可开启：插件会（递归）创建该目录并写入 `<dir>/opencode-provider-proxy-debug.log`。未设置或为空 → 不写任何日志文件。日志中的 `Authorization` token 会被脱敏。
+
+```bash
+export OPENCODE_PROVIDER_PROXY_LOG_DIR="$HOME/.cache/opencode-provider-proxy"
+```
 
 ## 工作原理
 
-1. 插件加载时，`readProxyConfig()` 从环境变量或配置文件读取代理映射。
-2. 在 `config` hook 中，为每个配置了代理的 provider 注入一个自定义 `fetch`，该 fetch 将所有请求通过配置的 proxy agent 转发。
-3. 请求被重写为原始的 Node.js `http`/`https` 请求，带有 proxy agent，保留 method、headers 和 body。
+插件在加载时：
 
-### 支持的 body 类型
+1. 读取 host → 代理 映射，并在全局 `fetch` 上安装**一个**幂等拦截器。
+2. 对每个请求提取 host 并查表：
+   - **命中** → 通过原始 TCP socket（[netbun](https://github.com/phederal/netbun)）经代理发送，保留 method、headers、body。
+   - **未命中** → 原样交给原始 `fetch`，不做任何改动（因此 OpenCode 自身的插件 / 认证 / 更新 / 遥测流量永远不会被代理）。
 
-插件处理所有标准的 `RequestInit.body` 类型：
+在**全局 `fetch`** 上拦截，是单一机制同时覆盖两种 token 场景的关键，因为 OpenCode 的 provider SDK 在调用时才读取 `globalThis.fetch`：
 
-- `string` / `Buffer`
-- Web API `ReadableStream`（例如 `response.body`）
-- Node.js `Readable` 流（`.pipe()`）
-- `ArrayBuffer` / `TypedArray` / `DataView`
-- `Blob` / `File`
-- `URLSearchParams`
+- **静态 apiKey provider** 的 key 已在请求头里，并调用全局 `fetch` → 被拦截并代理。
+- **GitHub Copilot** 使用动态 OAuth `Bearer` token，由 OpenCode 通过它自己的 `options.fetch` wrapper 注入，而该 wrapper 调用的是**裸的**全局 `fetch`。本插件**从不改动 `options.fetch`**，因此 Copilot 的 wrapper 仍会注入最新的 `Bearer`，其外发请求依然落入我们的拦截器并被代理。（覆盖 `options.fetch` 正是此前导致 `400 missing required Authorization header` 的原因——本设计避免了它。）
 
-`FormData` 被明确拒绝——provider proxy 无法可靠地代理 multipart 表单数据。
+当 `input` 为 `Request` 对象时，会对 headers 做重新合并，避免调用方传入的 `init.headers` 误丢 `Authorization`。同时用 `AsyncLocalStorage` 做递归保护，确保经代理的发送不会再次进入拦截器。
 
-### 超时
+## Bun / 运行时兼容性
 
-请求在 30 秒后超时。超时通过 `req.setTimeout()` 在底层 socket 上生效。
+代理通过原始 TCP socket 实现（netbun 的 HTTP-`CONNECT` / SOCKS），而非 Node 的 `http`/`https` agent。这绕开了 Bun 历史上忽略自定义 agent 的问题（[oven-sh/bun#15499](https://github.com/oven-sh/bun/issues/15499)），在各运行时表现一致。netbun 已打包进发布产物，因此本包**无任何运行时依赖**。
 
-## 构建
+常见可直接使用的代理软件：Squid、tinyproxy、3proxy、Dante（SOCKS）、shadowsocks（`socks5`）以及大多数公司 HTTP 代理。
 
-```bash
-npm run build    # tsc
-```
+## 分支
 
-依赖：
-- Node.js >= 18
-- TypeScript 5.7+
+| 分支 | 代理机制 |
+| --- | --- |
+| `master`（当前） | netbun 原始 TCP socket（HTTP CONNECT / SOCKS），全运行时可用 |
 
 ## 许可证
 

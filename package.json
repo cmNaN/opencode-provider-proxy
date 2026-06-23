@@ -1,27 +1,40 @@
 {
   "name": "opencode-provider-proxy",
   "version": "1.0.0",
-  "private": true,
-  "description": "Per-provider proxy configuration plugin for OpenCode",
+  "description": "Route OpenCode AI provider requests through per-host proxies (SOCKS / HTTP CONNECT)",
   "type": "module",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "README_ZH.md"
   ],
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --format=esm --platform=node --outfile=dist/index.js --external:@opencode-ai/plugin",
-    "prepare": "npm run build",
-    "postinstall": "node scripts/postinstall.mjs",
-    "prepublishOnly": "npm run build"
+    "bundle": "esbuild src/index.ts --bundle --format=esm --platform=node --outfile=dist/index.js --external:@opencode-ai/plugin",
+    "prepublishOnly": "npm run bundle"
   },
-  "dependencies": {
-    "netbun": "^0.3.0"
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "proxy",
+    "socks5",
+    "http-proxy",
+    "github-copilot"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cmNaN/opencode-provider-proxy.git"
+  },
+  "homepage": "https://github.com/cmNaN/opencode-provider-proxy#readme",
+  "bugs": {
+    "url": "https://github.com/cmNaN/opencode-provider-proxy/issues"
   },
   "devDependencies": {
-    "@opencode-ai/plugin": "^1.14.25",
-    "@types/node": "^22.0.0",
+    "@opencode-ai/plugin": "^1.17.9",
+    "@types/node": "^22.20.0",
     "esbuild": "^0.28.1",
-    "typescript": "^5.7.0"
+    "netbun": "^0.3.0",
+    "typescript": "^5.9.3"
   }
 }

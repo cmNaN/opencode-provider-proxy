@@ -1,1 +1,23 @@
+# Dependencies
 node_modules/
+
+# Build output (dist/ is intentionally committed so `opencode plugin git+https://...` needs no build step)
+*.tsbuildinfo
+
+# Logs (incl. plugin debug log)
+*.log
+
+# Local proxy config (may contain credentials)
+provider-proxy.json
+
+# Local agent tooling
+.omo/
+.codegraph
+.sisyphus/
+
+# Env / secrets
+.env
+.env.*
+
+# OS files
+.DS_Store

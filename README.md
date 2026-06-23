@@ -1,151 +1,125 @@
 # opencode-provider-proxy
 
-Per-provider proxy configuration plugin for [OpenCode](https://github.com/opencode-ai/opencode).
+[中文文档](./README_ZH.md)
 
-Each provider (e.g. deepseek, openai) can use a different proxy URL. Requests to that provider are routed through the configured proxy.
+An [OpenCode](https://opencode.ai) plugin that routes AI provider API requests through a proxy, matched **by hostname**. Useful when some provider endpoints (e.g. `api.githubcopilot.com`) are only reachable through a corporate / regional proxy, while everything else should go direct.
 
-> **💡 Bun compatibility**: This branch (`master`) uses a raw TCP socket approach via `netbun` and works on **all Bun versions** (1.3.x+).  
-> See the `next` branch for a `socks-proxy-agent`/`https-proxy-agent` implementation that requires a newer Bun with Agent support.
+It works for both **static-apiKey** providers (deepseek, openai, …) and **dynamic-token** providers like **GitHub Copilot** (whose OAuth `Bearer` token is injected by OpenCode at request time) — see [How it works](#how-it-works).
 
 ## Install
 
-```bash
-# Clone the plugin
-git clone git@github.com:cmNaN/opencode-provider-proxy.git
-cd opencode-provider-proxy
+Add the plugin to your OpenCode config at `~/.config/opencode/opencode.json`:
 
-# Build
-npm run build
-
-# Copy to your OpenCode plugins directory
-mkdir -p ~/.config/opencode/plugins
-cp dist/index.js ~/.config/opencode/plugins/opencode-provider-proxy.js
-```
-
-Add to your OpenCode configuration:
-
-```jsonc
-// ~/.config/opencode/opencode.json
+```json
 {
-  "plugins": [
-    {
-      "name": "opencode-provider-proxy",
-      "path": "/path/to/opencode-provider-proxy"
-    }
-  ]
+  "plugin": ["git+https://github.com/cmNaN/opencode-provider-proxy.git"]
 }
 ```
 
-> **Note**: OpenCode runs on Bun, not Node.js. The plugin is built as a standalone JS file and loaded by Bun. Node.js is only used for development (TypeScript compilation).
+OpenCode installs it straight from GitHub on the next start — it clones the repo over HTTPS (no SSH key required) and uses the prebuilt `dist/index.js` committed in the repo, so there is no build step at install time and no npm publish is required. `plugin` is a string array — append to it if you already have other plugins.
+
+To pin a version, append a git ref to the same HTTPS URL: `git+https://github.com/cmNaN/opencode-provider-proxy.git#v1.0.0` (tag) or `git+https://github.com/cmNaN/opencode-provider-proxy.git#semver:^1.0.0`.
+
+Then create the proxy config (see [Configuration](#configuration)) and restart OpenCode.
+
+### Local development
+
+```bash
+git clone https://github.com/cmNaN/opencode-provider-proxy.git
+cd opencode-provider-proxy
+npm install
+npm run build
+```
+
+Drop (or symlink) the built file into the auto-scanned global plugins directory:
+
+```bash
+cp dist/index.js ~/.config/opencode/plugins/opencode-provider-proxy.js
+# or, to track rebuilds automatically:
+ln -s "$PWD/dist/index.js" ~/.config/opencode/plugins/opencode-provider-proxy.js
+```
+
+OpenCode auto-loads any `*.js` / `*.ts` under `~/.config/opencode/plugins/`, so a local file does **not** need to be listed in the `plugin` array.
 
 ## Configuration
 
-### Via config file
+The plugin reads its host → proxy map from (in order of precedence):
 
-`~/.config/opencode/provider-proxy.json` (or `$XDG_CONFIG_HOME/opencode/provider-proxy.json`):
+1. The `OPENCODE_PROVIDER_PROXY` environment variable (a JSON string), or
+2. `~/.config/opencode/provider-proxy.json` (XDG-aware: honors `$XDG_CONFIG_HOME`).
+
+The schema is a flat `{ "hostname": "proxyUrl" }` object. **Keys are hostnames**, values are proxy URLs:
 
 ```json
 {
-  "deepseek": "http://127.0.0.1:7890",
-  "openai": "http://127.0.0.1:7891"
+  "api.githubcopilot.com": "http://user:pass@proxy.example.com:63128",
+  "api.deepseek.com": "socks5://127.0.0.1:1080"
 }
 ```
 
-### Via environment variable
+A request is proxied when its **host** matches a configured key (exact host match). Every other request goes out directly, untouched. The config is read once at startup, so **restart OpenCode after changing it**.
 
-`OPENCODE_PROVIDER_PROXY` — JSON object with the same schema:
+Equivalent environment-variable form:
 
 ```bash
-export OPENCODE_PROVIDER_PROXY='{"deepseek":"http://127.0.0.1:7890"}'
-```
-
-Environment variable takes precedence over the config file.
-
-### Wildcard proxy
-
-A `"*"` key matches all providers that don't have a specific proxy configured:
-
-```json
-{
-  "*": "socks5://127.0.0.1:1080",
-  "openai": "http://127.0.0.1:7890"
-}
+export OPENCODE_PROVIDER_PROXY='{"api.githubcopilot.com":"http://user:pass@proxy.example.com:63128"}'
 ```
 
 ### Authentication
 
-If your proxy requires authentication, embed credentials in the proxy URL:
+Embed proxy credentials directly in the proxy URL:
 
-```json
-{
-  "deepseek": "http://username:password@127.0.0.1:7890"
-}
+```
+http://username:password@proxy.example.com:63128
+socks5://username:password@127.0.0.1:1080
 ```
 
-The plugin automatically extracts `username:password` and sends a `Proxy-Authorization: Basic` header. Special characters in the password must be URL-encoded (e.g., `@` → `%40`, `:` → `%3A`).
+URL-encode special characters in the username/password (e.g. `@` → `%40`, `:` → `%3A`).
 
 ### Supported proxy types
 
-| Proxy address | Description |
-|---------------|-------------|
-| `http://proxy:port` | Plain HTTP CONNECT proxy |
-| `https://proxy:port` | HTTP CONNECT proxy over TLS |
-| `socks5://proxy:port` | SOCKS5 proxy (DNS resolved locally) |
-| `socks5h://proxy:port` | SOCKS5 proxy (DNS resolved by proxy) |
-| `socks4://proxy:port` | SOCKS4 proxy |
-| `socks4a://proxy:port` | SOCKS4a proxy (DNS resolved by proxy) |
-| `socks://proxy:port` | Alias for `socks5://` |
+| Scheme | Description |
+| --- | --- |
+| `http` / `https` | HTTP `CONNECT` tunneling proxy |
+| `socks5` / `socks5h` | SOCKS5 (with `socks5h` resolving DNS at the proxy) |
+| `socks4` / `socks4a` | SOCKS4 / SOCKS4a |
+| `socks` | Alias for SOCKS5 |
 
-Common proxy software:
-- [Clash](https://github.com/Dreamacro/clash) / [Clash Meta](https://github.com/MetaCubeX/Clash.Meta) — HTTP / SOCKS5 port
-- [v2ray](https://www.v2fly.org/) / [Xray](https://xtls.github.io/) — HTTP / SOCKS outbound
-- [Squid](http://www.squid-cache.org/)
-- [mitmproxy](https://mitmproxy.org/)
+### Optional debug logging
+
+Logging is **off by default**. To enable it, set `OPENCODE_PROVIDER_PROXY_LOG_DIR` to a directory; the plugin creates it (recursively) and writes `<dir>/opencode-provider-proxy-debug.log`. Unset or empty → no log file is written. The `Authorization` token is masked in the log.
+
+```bash
+export OPENCODE_PROVIDER_PROXY_LOG_DIR="$HOME/.cache/opencode-provider-proxy"
+```
 
 ## How it works
 
-1. On plugin load, `readProxyConfig()` reads the proxy mapping from env var or config file.
-2. During the `config` hook, for each configured provider, it injects a custom `fetch` that routes all requests through the configured proxy.
-3. The custom fetch creates a raw TCP socket directly through the proxy (SOCKS or HTTP CONNECT), upgrades to TLS if needed, and sends the HTTP request manually.
+At load time the plugin:
 
-### Why raw sockets?
+1. Reads the host → proxy map and installs **one** idempotent interceptor over the global `fetch`.
+2. For each request, it extracts the host and looks it up in the map.
+   - **Match** → the request is sent through the proxy using raw TCP sockets ([netbun](https://github.com/phederal/netbun)), preserving method, headers, and body.
+   - **No match** → it falls through to the original `fetch`, completely untouched (so OpenCode's own plugin / auth / update / telemetry traffic is never proxied).
 
-Bun's `node:http` module does not honor custom `Agent.createConnection()` from third-party agent libraries (e.g. `socks-proxy-agent`, `https-proxy-agent`) — see [oven-sh/bun#15499](https://github.com/oven-sh/bun/issues/15499). This plugin works around that by handling the proxy protocol at the TCP socket level, which works reliably on all Bun versions.
+Routing on the **global `fetch`** is what makes a single mechanism cover both token scenarios, because OpenCode's provider SDKs read `globalThis.fetch` at call time:
 
-Once [oven-sh/bun#31587](https://github.com/oven-sh/bun/pull/31587) (node:http rewrite merged Jun 2026) ships in a Bun release, the `next` branch will provide a version using standard Node.js proxy agents.
+- **Static-apiKey providers** already carry their key in the request headers and call the global `fetch` → intercepted and proxied.
+- **GitHub Copilot** uses a dynamic OAuth `Bearer` token that OpenCode injects via its own `options.fetch` wrapper, which then calls the **bare** global `fetch`. This plugin **never touches `options.fetch`**, so Copilot's wrapper keeps adding the fresh `Bearer` token and its outbound call still lands in our interceptor and gets proxied. (Overwriting `options.fetch` is exactly what previously caused the `400 missing required Authorization header` error — this design avoids it.)
 
-### Supported body types
+A request whose `input` is a `Request` object has its headers re-merged so a caller-supplied `init.headers` cannot accidentally drop the `Authorization` header. A recursion guard (`AsyncLocalStorage`) ensures the proxied send does not re-enter the interceptor.
 
-The plugin handles all standard `RequestInit.body` types:
+## Bun / runtime compatibility
 
-- `string` / `Buffer`
-- Web API `ReadableStream` (e.g., `response.body`)
-- Node.js `Readable` stream (`.pipe()`)
-- `ArrayBuffer` / `TypedArray` / `DataView`
-- `Blob` / `File`
-- `URLSearchParams`
+Proxying is implemented with raw TCP sockets (via netbun's HTTP-`CONNECT` / SOCKS implementation) rather than a Node `http`/`https` agent. This sidesteps Bun's historical issue of ignoring custom agents ([oven-sh/bun#15499](https://github.com/oven-sh/bun/issues/15499)) and works consistently across runtimes. netbun is bundled into the published file, so the package has **zero runtime dependencies**.
 
-`FormData` is explicitly rejected — provider proxy cannot reliably proxy multipart form data.
-
-### Timeout
-
-Requests time out after 30 seconds.
-
-## Build
-
-```bash
-npm run build    # esbuild (bundles netbun into a single JS file)
-```
-
-Requires:
-- Node.js >= 18
+Common proxy software that works out of the box: Squid, tinyproxy, 3proxy, Dante (SOCKS), shadowsocks (`socks5`), and most corporate HTTP proxies.
 
 ## Branches
 
-| Branch | Approach | Bun compatibility |
-|--------|----------|-------------------|
-| `master` | Raw TCP sockets via `netbun` | **All Bun versions** (1.3.x+) |
-| `next` | `socks-proxy-agent` / `https-proxy-agent` | Bun ≥ (future release with #31587) or Node.js |
+| Branch | Proxy mechanism |
+| --- | --- |
+| `master` (this) | netbun raw TCP sockets (HTTP CONNECT / SOCKS), works on all runtimes |
 
 ## License
 
